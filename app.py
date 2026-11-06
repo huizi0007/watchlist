@@ -6,7 +6,7 @@ from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy  # 导入扩展类
 from sqlalchemy.orm import DeclarativeBase
 from pathlib import Path
-from sqlalchemy import String
+from sqlalchemy import String, select
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -44,9 +44,8 @@ class Movie(db.Model):  # 表名将会是 movie
 
 @app.route('/')
 def index():
-    user = db.session.execute(select(User)).scalar()  # 读取用户记录
     movies = db.session.execute(select(Movie)).scalars().all()  # 读取所有电影记录
-    return render_template('index.html', user=user, movies=movies)
+    return render_template('index.html',  movies=movies)
 
 
 @app.cli.command('init-db')  # 注册为命令，传入自定义命令名
@@ -90,7 +89,15 @@ def forge():
     click.echo('Done.')
 
 
+@app.context_processor
+def inject_user():
+    user = db.session.execute(select(User)).scalar()
+    return dict(user=user)
 
+
+@app.errorhandler(404)  # 传入要处理的错误代码
+def page_not_found(error):  # 接受异常对象作为参数
+    return render_template('404.html'), 404  # 返回模板和状态码
 
 
 
